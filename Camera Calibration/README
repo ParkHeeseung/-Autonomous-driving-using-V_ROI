@@ -1,0 +1,45 @@
+* 카메라 켈리브레이션
+
+프로그램 설명
+
+카메라 내부 파라미터, 외부 파라미터를 구해서 xml파일로 저장해준다.
+
+
+컴파일 방법
+
+g++ -o Calibration Calibration.cpp $(pkg-config --libs --cflags opencv)
+
+실행 방법
+
+./Calibration
+
+
+사용 방법
+
+1. Enter number of corners along width
+너비에 따라 모서리 수를 입력하십시오.
+
+2. Enter number of corners along height
+높이에 따라 모서리 수를 입력하십시오.
+
+3. Enter number of boards
+보정을 위한 체스판 스냅샷 수를 입력하시오.
+
+4. 출력되는 화면에 모서리를 찾은 점과 점 사이를 이은 엣지가 검출되면 스페이스 바를 누르시오.(설정한 스냅샷 수 만큼)
+
+* 보정된 카메라 출력해보기
+
+프로그램 설명
+
+카메라 내부 파라미터와 외부 파라미터가 기록되어있는 xml파일을 읽어 왜곡된 영상을 보정하여 출력해준다.
+
+컴파일 방법
+
+g++ -o main main.cpp $(pkg-config --libs --cflags opencv)
+
+실행 방법
+
+./main
+
+
+
