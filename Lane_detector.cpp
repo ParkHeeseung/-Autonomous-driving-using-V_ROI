@@ -70,6 +70,9 @@ int main(){
   //Control var
   float steer, skewness, xLeft, xRight, y = 120, slope, x_Difference;
 
+  //output
+  Mat output;
+
 
   FileStorage fs;
   fs.open("camcalib.xml", FileStorage::READ);
@@ -94,8 +97,8 @@ int main(){
     temp = frame.clone();
     remap(frame, temp, map1, map2, CV_INTER_LINEAR);
 
-    leftROI = frame(Rect(0, temp.rows/4 * 3, temp.cols/2, temp.rows/4));
-    rightROI = temp(Rect(temp.cols/2, temp.rows/4 * 3, temp.cols/2, temp.rows/4));
+    leftROI = temp(Rect(temp.cols/16, temp.rows/4 * 3, temp.cols/16 * 7, temp.rows/4));
+    rightROI = temp(Rect(temp.cols/16 * 8, temp.rows/4 * 3, temp.cols/16 * 7, temp.rows/4));
 
     cvtColor(leftROI, grayImgL, CV_BGR2GRAY);
     cvtColor(rightROI, grayImgR, CV_BGR2GRAY);
@@ -108,7 +111,7 @@ int main(){
 
     if(left_error || right_error){
 
-      oriImg = frame(Rect(0, frame.rows/4 * 3, frame.cols, frame.rows/4));
+      oriImg = temp(Rect(temp.cols/16, temp.rows/4 * 3, temp.cols/16*14, temp.rows/4));
 
       cvtColor(oriImg, grayImg, CV_BGR2GRAY);
 
@@ -116,50 +119,79 @@ int main(){
 
       curve_error = hough_curve(cannyImgL, &cp1, &cp2);
 
-      line(oriImg, p1, p2, COLOR_RED, 4, CV_AA);
       slope = get_slope(cp1, cp2);
 
       if(curve_error){
         steer = 0.0;
       }
       else if(slope < 0.0){
-      //right rotate (0.0 ~ 1.0)
-        steer =  data_transform(slope, -1.2, -0.2, 0.0, 1.0);
-        xLeft = (y - cp1.y + slope * cp1.x) / slope;
+      //right rotate (-1.0 ~ 0.0)
+      xLeft = (y - cp1.y + slope * cp1.x) / slope;
 
-        skewness = data_transform(xLeft, -200.0, 50.0, 0.0, 1.0);
-        steer = -(steer * skewness);
+      if(xLeft > 320.0){
+        steer = -1.0;
       }
       else{
-      //left rotate (-1.0 ~ 0.0)
-        steer =  data_transform(slope, 0.2, 1.2, -1.0, 0.0);
-        xRight = (y - cp1.y + slope * cp1.x) / slope;
 
-        skewness = data_transform(xRight, 600, 800, -1.0, 0.0);
-        steer = (steer * skewness);
+        steer =  data_transform(slope, -1.2, -0.1, 0.0, 2.0);
+
+        skewness = data_transform(xLeft, -200.0, 320.0, 0.0, 1.0);
+        steer = -(steer * skewness);
 
       }
+
+      }
+      else{
+      //left rotate (0.0 ~ 1.0)
+      xRight = (y - cp1.y + slope * cp1.x) / slope;
+
+      if(xRight < 320.0){
+        steer = 1.0;
+      }
+      else{
+
+        steer =  data_transform(slope, 0.1, 1.2, -2.0, 0.0);
+        skewness = data_transform(xRight, 320.0, 800.0, -1.0, 0.0);
+        steer = (steer * skewness);
+      }
+
+      }
+
+
+      cout << "앙 치우침 띠 : " << skewness << endl;
+      line(oriImg, cp1, cp2, COLOR_RED, 4, CV_AA);
+
+      imshow("curve_output", oriImg);
+
     }
     else{
       line(leftROI, p1, p2, COLOR_RED, 4, CV_AA);
       line(rightROI, p3, p4, COLOR_RED, 4, CV_AA);
 
+      hconcat(leftROI, rightROI, output);
+
       get_intersectpoint(p1, p2, Point(p3.x + 320, p3.y), Point(p4.x + 320, p4.y), &p5);
 
-      x_Difference = 200.0 - p5.x;
+      x_Difference = 220.0 - p5.x;
 
       if(x_Difference > 0.0){
-        steer = data_transform(x_Difference, 0.0, 200.0, 0.0, 0.3);
+        steer = data_transform(x_Difference, 0.0, 200.0, 0.0, 0.2);
         steer = -steer;
       }
       else if(x_Difference < 0.0){
-        steer = data_transform(x_Difference, -440.0, 0.0, -0.3, 0.0);
+        steer = data_transform(x_Difference, -440.0, 0.0, -0.2, 0.0);
         steer = -steer;
       }
       else{
         steer = 0.0;
       }
+
+
+      imshow("reuslt", output);
+
     }
+
+    steer =  steer * steer * steer;
 
 
     if(steer > 1.0){
