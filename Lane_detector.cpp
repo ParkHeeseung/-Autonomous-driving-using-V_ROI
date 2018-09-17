@@ -135,7 +135,7 @@ int main(){
 
         steer =  data_transform(slope, -1.2, -0.1, 0.0, 2.0);
 
-        skewness = data_transform(xLeft, -200.0, 320.0, 0.0, 1.0);
+        skewness = data_transform(xLeft, -200.0, 320.0, 0.0, 2.0);
         steer = -(steer * skewness);
 
       }
@@ -151,7 +151,7 @@ int main(){
       else{
 
         steer =  data_transform(slope, 0.1, 1.2, -2.0, 0.0);
-        skewness = data_transform(xRight, 320.0, 800.0, -1.0, 0.0);
+        skewness = data_transform(xRight, 320.0, 800.0, -2.0, 0.0);
         steer = (steer * skewness);
       }
 
@@ -191,7 +191,7 @@ int main(){
 
     }
 
-    steer =  steer * steer * steer;
+    steer =  2.0 * steer * steer * steer;
 
 
     if(steer > 1.0){
