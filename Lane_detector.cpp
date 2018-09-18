@@ -56,9 +56,13 @@ int main(){
     return -1;
   }
 
+
   //lane detection
-  Mat frame, leftROI, rightROI, grayImgL, grayImgR,  cannyImgL, cannyImgR;
+  Mat frame, binary, leftROI, rightROI, grayImgL, grayImgR,  cannyImgL, cannyImgR;
   Point p1, p2, p3, p4, p5;
+  Mat dilated;
+  Mat mask = getStructuringElement(MORPH_RECT, Size(3, 3), Point(1, 1));
+
 
   //curve detection
   Mat oriImg, grayImg;
@@ -69,6 +73,7 @@ int main(){
 
   //Control var
   float steer, skewness, xLeft, xRight, y = 120, slope, x_Difference;
+
 
   //output
   Mat output;
@@ -97,14 +102,15 @@ int main(){
     temp = frame.clone();
     remap(frame, temp, map1, map2, CV_INTER_LINEAR);
 
-    leftROI = temp(Rect(temp.cols/16, temp.rows/4 * 3, temp.cols/16 * 7, temp.rows/4));
-    rightROI = temp(Rect(temp.cols/16 * 8, temp.rows/4 * 3, temp.cols/16 * 7, temp.rows/4));
+    inRange(temp, RGB_WHITE_LOWER, RGB_WHITE_UPPER, binary);
+    dilate(binary, dilated, mask, Point(-1, -1), 3);
 
-    cvtColor(leftROI, grayImgL, CV_BGR2GRAY);
-    cvtColor(rightROI, grayImgR, CV_BGR2GRAY);
+    leftROI = binary(Rect(binary.cols/16, binary.rows/4 * 3, binary.cols/16 * 7, binary.rows/4));
+    rightROI = binary(Rect(binary.cols/16 * 8, binary.rows/4 * 3, binary.cols/16 * 7, binary.rows/4));
 
-    Canny(grayImgL, cannyImgL, 150, 270);
-    Canny(grayImgR, cannyImgR, 150, 270);
+
+    Canny(leftROI, cannyImgL, 150, 270);
+    Canny(rightROI, cannyImgR, 150, 270);
 
     left_error = hough_left(cannyImgL, &p1, &p2);
     right_error = hough_right(cannyImgR, &p3, &p4);
@@ -113,9 +119,10 @@ int main(){
 
       oriImg = temp(Rect(temp.cols/16, temp.rows/4 * 3, temp.cols/16*14, temp.rows/4));
 
-      cvtColor(oriImg, grayImg, CV_BGR2GRAY);
+      inRange(temp, RGB_WHITE_LOWER, RGB_WHITE_UPPER, binary);
+      dilate(binary, dilated, mask, Point(-1, -1), 3);
 
-      Canny(grayImg, cannyImgL, 150, 270);
+      Canny(dilated, cannyImgL, 150, 270);
 
       curve_error = hough_curve(cannyImgL, &cp1, &cp2);
 
@@ -158,7 +165,6 @@ int main(){
       }
 
 
-      cout << "앙 치우침 띠 : " << skewness << endl;
       line(oriImg, cp1, cp2, COLOR_RED, 4, CV_AA);
 
       imshow("curve_output", oriImg);
