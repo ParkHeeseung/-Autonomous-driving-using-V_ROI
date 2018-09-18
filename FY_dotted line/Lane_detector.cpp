@@ -20,7 +20,7 @@ const CvScalar COLOR_BLUE = CvScalar(255, 0, 0);
 const CvScalar COLOR_RED = CvScalar(0, 0, 255);
 const CvScalar COLOR_GREEN = CvScalar(170, 170, 0);
 
-const Vec3b RGB_WHITE_LOWER = Vec3b(100, 100, 180);
+const Vec3b RGB_WHITE_LOWER = Vec3b(100, 100, 160);
 const Vec3b RGB_WHITE_UPPER = Vec3b(255, 255, 255);
 const Vec3b RGB_YELLOW_LOWER = Vec3b(225, 180, 0);
 const Vec3b RGB_YELLOW_UPPER = Vec3b(255, 255, 170);
@@ -95,19 +95,18 @@ int main(){
 
   bool left_error = true, right_error = true, curve_error = true;
 
-  Mat mask = getStructuringElement(MORPH_RECT, Size(3, 3), Point(1, 1));
+  Mat mask = getStructuringElement(MORPH_RECT, Size(5, 5), Point(1, 1));
+  Mat mask1 = getStructuringElement(MORPH_RECT, Size(3, 3), Point(1, 1));
+
 
   while(1){
 
     capture >> frame;
 
     inRange(frame, RGB_WHITE_LOWER, RGB_WHITE_UPPER, binary);
-    Mat dilated;
-
-    dilate(binary, dilated, mask, Point(-1, -1), 3);
+    Mat dilated, dilatedL, dilatedR, eroded;
 
     imshow("hi", binary);
-    imshow("dilated", dilated);
 
 
     temp = frame.clone();
@@ -121,9 +120,11 @@ int main(){
     inRange(leftROI, RGB_WHITE_LOWER, RGB_WHITE_UPPER, binaryL);
     inRange(rightROI, RGB_WHITE_LOWER, RGB_WHITE_UPPER, binaryR);
 
+    dilate(binaryL, dilatedL, mask, Point(-1, -1), 3);
+    dilate(binaryR, dilatedR, mask, Point(-1, -1), 3);
 
-    Canny(binaryL, cannyImgL, 150, 270);
-    Canny(binaryR, cannyImgR, 150, 270);
+    Canny(dilatedL, cannyImgL, 150, 270);
+    Canny(dilatedR, cannyImgR, 150, 270);
 
     left_error = hough_left(cannyImgL, &p1, &p2);
     right_error = hough_right(cannyImgR, &p3, &p4);
@@ -133,8 +134,10 @@ int main(){
       oriImg = temp(Rect(temp.cols/16, temp.rows/4 * 3, temp.cols/16*14, temp.rows/4));
 
       inRange(oriImg, RGB_WHITE_LOWER, RGB_WHITE_UPPER, binary);
+      dilate(binary, dilated, mask, Point(-1, -1), 3);
 
-      Canny(binary, cannyImgL, 150, 270);
+
+      Canny(dilated, cannyImgL, 150, 270);
 
       curve_error = hough_curve(cannyImgL, &cp1, &cp2);
 

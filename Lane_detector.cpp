@@ -20,7 +20,7 @@ const CvScalar COLOR_BLUE = CvScalar(255, 0, 0);
 const CvScalar COLOR_RED = CvScalar(0, 0, 255);
 const CvScalar COLOR_GREEN = CvScalar(170, 170, 0);
 
-const Vec3b RGB_WHITE_LOWER = Vec3b(100, 100, 150);
+const Vec3b RGB_WHITE_LOWER = Vec3b(100, 100, 160);
 const Vec3b RGB_WHITE_UPPER = Vec3b(255, 255, 255);
 const Vec3b RGB_YELLOW_LOWER = Vec3b(225, 180, 0);
 const Vec3b RGB_YELLOW_UPPER = Vec3b(255, 255, 170);
@@ -32,8 +32,10 @@ const Vec3b HLS_YELLOW_UPPER = Vec3b(45, 200, 255);
 
 const Size imageSize = Size(640, 480);
 
+
 Mat cameraMatrix = Mat::eye(3, 3, CV_64FC1);
 Mat distCoeffs = Mat::zeros(1, 5, CV_64FC1);
+Mat mask = getStructuringElement(MORPH_RECT, Size(3, 3), Point(1, 1));
 
 void base_ROI(Mat& img, Mat& img_ROI);
 void v_roi(Mat& img, Mat& img_ROI, const Point& p1, const Point& p2);
@@ -58,10 +60,9 @@ int main(){
 
 
   //lane detection
-  Mat frame, binary, leftROI, rightROI, grayImgL, grayImgR,  cannyImgL, cannyImgR;
+  Mat frame, binary, binaryL, binaryR, leftROI, rightROI, grayImgL, grayImgR, cannyImgL, cannyImgR;
   Point p1, p2, p3, p4, p5;
-  Mat dilated;
-  Mat mask = getStructuringElement(MORPH_RECT, Size(3, 3), Point(1, 1));
+  Mat dilated, dilatedL, dilatedR;
 
 
   //curve detection
@@ -102,15 +103,17 @@ int main(){
     temp = frame.clone();
     remap(frame, temp, map1, map2, CV_INTER_LINEAR);
 
-    inRange(temp, RGB_WHITE_LOWER, RGB_WHITE_UPPER, binary);
-    dilate(binary, dilated, mask, Point(-1, -1), 3);
+    leftROI = temp(Rect(temp.cols/16, temp.rows/4 * 3, temp.cols/16 * 7, temp.rows/4));
+    rightROI = temp(Rect(temp.cols/16 * 8, temp.rows/4 * 3, temp.cols/16 * 7, temp.rows/4));
 
-    leftROI = binary(Rect(binary.cols/16, binary.rows/4 * 3, binary.cols/16 * 7, binary.rows/4));
-    rightROI = binary(Rect(binary.cols/16 * 8, binary.rows/4 * 3, binary.cols/16 * 7, binary.rows/4));
+    inRange(leftROI, RGB_WHITE_LOWER, RGB_WHITE_UPPER, binaryL);
+    inRange(rightROI, RGB_WHITE_LOWER, RGB_WHITE_UPPER, binaryR);
 
+    dilate(binaryL, dilatedL, mask, Point(-1, -1), 3);
+    dilate(binaryR, dilatedR, mask, Point(-1, -1), 3);
 
-    Canny(leftROI, cannyImgL, 150, 270);
-    Canny(rightROI, cannyImgR, 150, 270);
+    Canny(dilatedL, cannyImgL, 150, 270);
+    Canny(dilatedR, cannyImgR, 150, 270);
 
     left_error = hough_left(cannyImgL, &p1, &p2);
     right_error = hough_right(cannyImgR, &p3, &p4);
@@ -119,7 +122,7 @@ int main(){
 
       oriImg = temp(Rect(temp.cols/16, temp.rows/4 * 3, temp.cols/16*14, temp.rows/4));
 
-      inRange(temp, RGB_WHITE_LOWER, RGB_WHITE_UPPER, binary);
+      inRange(oriImg, RGB_WHITE_LOWER, RGB_WHITE_UPPER, binary);
       dilate(binary, dilated, mask, Point(-1, -1), 3);
 
       Canny(dilated, cannyImgL, 150, 270);
